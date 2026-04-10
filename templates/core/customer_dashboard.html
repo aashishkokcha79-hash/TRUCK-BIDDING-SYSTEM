@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Customer Dashboard - FreightBid{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="font-size: 2rem;">Customer Dashboard</h2>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr 2fr;">
+        <!-- Post Requirement Form -->
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1.5rem;">Post New Requirement</h3>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field.errors }}
+                    <input type="text" name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-control" required>
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Requirement</button>
+            </form>
+        </div>
+
+        <!-- My Requirements List -->
+        <div>
+            <h3 style="margin-bottom: 1.5rem;">My Requirements</h3>
+            {% if requirements %}
+                <div class="grid">
+                {% for req in requirements %}
+                    <div class="glass-card" style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                                {{ req.source_city }} &rarr; {{ req.destination_city }}
+                            </div>
+                            <div class="text-secondary" style="font-size: 0.9rem;">
+                                Status: 
+                                <span style="font-weight: 600; color: {% if req.status == 'Open' %}var(--accent-primary){% else %}var(--success){% endif %};">
+                                    {{ req.status }}
+                                </span>
+                                | Posted: {{ req.created_at|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        <a href="{% url 'requirement_detail' req.id %}" class="btn btn-outline" style="font-size: 0.85rem;">View Details</a>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card text-center" style="padding: 3rem;">
+                    <p class="text-secondary">You haven't posted any requirements yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

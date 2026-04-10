@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Transporter Dashboard - FreightBid{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <h2 style="font-size: 2rem; margin-bottom: 2rem;">Transporter Dashboard</h2>
+
+    <div class="grid" style="gap: 2rem;">
+        <!-- Open Requirements -->
+        <div>
+            <h3 style="margin-bottom: 1.5rem; color: var(--text-primary);">Available Loads</h3>
+            {% if open_requirements %}
+                <div class="grid grid-2">
+                {% for req in open_requirements %}
+                    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--accent-primary);">
+                                {{ req.source_city }} &rarr; {{ req.destination_city }}
+                            </div>
+                            <div class="text-secondary" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                Posted by: {{ req.customer.username }} | {{ req.created_at|timesince }} ago
+                            </div>
+                            
+                            {% if req.my_bid %}
+                                <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 0.5rem; color: var(--success);">
+                                    Your Current Bid: <strong>${{ req.my_bid.amount }}</strong>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Bid Form -->
+                        <form method="post" style="display: flex; gap: 0.5rem;">
+                            {% csrf_token %}
+                            <input type="hidden" name="place_bid" value="1">
+                            <input type="hidden" name="requirement_id" value="{{ req.id }}">
+                            <div style="flex: 1;">
+                                <input type="number" step="0.01" name="amount" class="form-control" placeholder="Enter Amount ($)" required 
+                                    {% if req.my_bid %}value="{{ req.my_bid.amount }}"{% endif %}>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                {% if req.my_bid %}Update Bid{% else %}Place Bid{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card text-center text-secondary">No open requirements available right now.</div>
+            {% endif %}
+        </div>
+
+        <!-- Won Requirements -->
+        <div style="margin-top: 2rem;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--success);">Won Loads</h3>
+            {% if won_requirements %}
+                <div class="grid grid-2">
+                {% for req in won_requirements %}
+                    <div class="glass-card" style="border-color: var(--success);">
+                        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            {{ req.source_city }} &rarr; {{ req.destination_city }}
+                        </div>
+                        <div class="text-secondary" style="font-size: 0.9rem;">
+                            Customer: {{ req.customer.username }}
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; align-items: center; color: var(--success); font-weight: 500;">
+                            <span style="font-size:1.5rem; margin-right:0.5rem;">✅</span> Assigned to you
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card text-center text-secondary">You haven't won any requirements yet. Keep bidding!</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

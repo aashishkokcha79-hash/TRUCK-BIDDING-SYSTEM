@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Welcome to FreightBid{% endblock %}
+
+{% block content %}
+<div class="text-center mt-4">
+    <h1 style="font-size: 3rem; margin-bottom: 1rem; letter-spacing: -0.05em;">Modernize Your Freight Bidding.</h1>
+    <p class="text-secondary" style="font-size: 1.25rem; max-width: 600px; margin: 0 auto 2rem auto;">
+        Connect directly with top transporters or find the best loads instantly. The ultimate platform for transparent logistics.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 3rem;">
+        <a href="{% url 'signup' %}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Get Started</a>
+        <a href="{% url 'login' %}" class="btn btn-outline" style="padding: 1rem 2rem; font-size: 1.1rem;">Login</a>
+    </div>
+</div>
+{% endblock %}

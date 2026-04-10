@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Register - FreightBid{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 0 auto;" class="mt-4">
+    <div class="glass-card">
+        <h2 style="font-size: 2rem; margin-bottom: 2rem; text-align: center;">Join FreightBid</h2>
+        <form method="post" action="{% url 'signup' %}">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div style="color: #ef4444; margin-bottom: 1rem;">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            {% for field in form %}
+            <div class="form-group" id="group_{{ field.name }}">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.errors %}
+                <div style="color: #ef4444; font-size: 0.8rem; margin-bottom: 0.5rem;">{{ field.errors.0 }}</div>
+                {% endif %}
+                <input type="{% if 'password' in field.name %}password{% elif 'email' in field.name %}email{% else %}text{% endif %}" 
+                       name="{{ field.name }}" 
+                       id="{{ field.id_for_label }}" 
+                       class="form-control"
+                       {% if field.value %}value="{{ field.value }}"{% endif %}>
+            </div>
+            {% endfor %}
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const userTypeSelect = document.createElement('select');
+                    userTypeSelect.name = 'user_type';
+                    userTypeSelect.id = 'id_user_type';
+                    userTypeSelect.className = 'form-control';
+                    userTypeSelect.innerHTML = `
+                        <option value="Customer">Customer</option>
+                        <option value="Transporter">Transporter</option>
+                    `;
+                    
+                    const userTypeGroup = document.getElementById('group_user_type');
+                    if (userTypeGroup) {
+                        userTypeGroup.innerHTML = '';
+                        const label = document.createElement('label');
+                        label.className = 'form-label';
+                        label.innerText = 'I am a:';
+                        userTypeGroup.appendChild(label);
+                        userTypeGroup.appendChild(userTypeSelect);
+                    }
+
+                    const transporterNameGrp = document.getElementById('group_transporter_name');
+                    const vehicleNumGrp = document.getElementById('group_vehicle_number');
+
+                    function toggleFields() {
+                        if (userTypeSelect.value === 'Transporter') {
+                            if (transporterNameGrp) transporterNameGrp.style.display = 'block';
+                            if (vehicleNumGrp) vehicleNumGrp.style.display = 'block';
+                        } else {
+                            if (transporterNameGrp) transporterNameGrp.style.display = 'none';
+                            if (vehicleNumGrp) vehicleNumGrp.style.display = 'none';
+                        }
+                    }
+
+                    userTypeSelect.addEventListener('change', toggleFields);
+                    toggleFields();
+                });
+            </script>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Create Account</button>
+        </form>
+        <div class="text-center mt-4">
+            <span class="text-secondary">Already have an account? <a href="{% url 'login' %}">Log In</a></span>
+        </div>
+    </div>
+</div>
+{% endblock %}

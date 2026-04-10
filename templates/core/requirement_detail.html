@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Requirement Details - FreightBid{% endblock %}
+
+{% block content %}
+<!-- Include Leaflet CSS/JS for map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div class="mt-4">
+    <a href="{% url 'customer_dashboard' %}" class="text-secondary"
+        style="display: inline-block; margin-bottom: 1rem;">&larr; Back to Dashboard</a>
+
+    <div class="glass-card" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--accent-primary);">
+                    {{ requirement.source_city }} &rarr; {{ requirement.destination_city }}
+                </h2>
+                <div class="text-secondary">
+                    Status: <span style="font-weight: 600; color: {% if requirement.status == 'Open' %}var(--text-primary){% else %}var(--success){% endif %};">{{ requirement.status }}</span> |
+                    Posted: {{ requirement.created_at }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+        <!-- Bids Section -->
+        <div>
+            <h3 style="margin-bottom: 1.5rem;">Current Bids</h3>
+            {% if requirement.status == 'Open' %}
+            {% if bids %}
+            <!-- Highlight lowest bid -->
+            <div style="margin-bottom: 1.5rem;">
+                <span class="text-secondary">Lowest Bid:</span>
+                <div class="glass-card"
+                    style="border-color: var(--accent-primary); background: rgba(59, 130, 246, 0.1); margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="font-size: 1.5rem; margin-bottom: 0.25rem;">${{ lowest_bid.amount }}</h4>
+                        <div class="text-secondary" style="font-size: 0.9rem;">Transporter ID: {{ lowest_bid.transporter.username }}</div>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accept_bid" value="{{ lowest_bid.id }}">
+                        <button type="submit" class="btn btn-primary">Accept This Bid</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- All bids list -->
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for bid in bids %}
+                {% if bid.id != lowest_bid.id %}
+                <div class="glass-card"
+                    style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.1rem;">${{ bid.amount }}</div>
+                        <div class="text-secondary" style="font-size: 0.85rem;">{{ bid.transporter.username }}</div>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accept_bid" value="{{ bid.id }}">
+                        <button type="submit" class="btn btn-outline"
+                            style="padding: 0.5rem 1rem; font-size: 0.85rem;">Accept</button>
+                    </form>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="glass-card text-center text-secondary">
+                Waiting for transporters to place bids...
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="glass-card" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success);">
+                <h3 style="color: var(--success); margin-bottom: 1rem;">Winner Accepted</h3>
+                <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+                    ${{ requirement.winning_bid.amount }}
+                </div>
+                <div>By: {% if requirement.winning_bid.transporter.transporter_profile.transporter_name %}{{ requirement.winning_bid.transporter.transporter_profile.transporter_name }}{% else %}{{ requirement.winning_bid.transporter.username }}{% endif %}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Winning Transporter Details (If Closed) -->
+        {% if requirement.status == 'Closed' and requirement.winning_bid %}
+        <div>
+            <h3 style="margin-bottom: 1.5rem;">Transporter Details</h3>
+            <div class="glass-card" style="margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 1rem;">
+                    <div class="text-secondary" style="font-size: 0.85rem; text-transform: uppercase;">Transporter Name</div>
+                    <div style="font-size: 1.1rem; font-weight: 500;">{{ requirement.winning_bid.transporter.transporter_profile.transporter_name }}</div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div class="text-secondary" style="font-size: 0.85rem; text-transform: uppercase;">Vehicle Number</div>
+                    <div style="font-size: 1.1rem; font-weight: 500; font-family: monospace;">{{ requirement.winning_bid.transporter.transporter_profile.vehicle_number }}</div>
+                </div>
+                <div>
+                    <div class="text-secondary" style="font-size: 0.85rem; text-transform: uppercase;">Contact Number</div>
+                    <div style="font-size: 1.1rem; font-weight: 500;">{{ requirement.winning_bid.transporter.profile.contact_number }}</div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1.5rem;">Live Location (Simulated)</h3>
+            <div id="map"
+                style="height: 300px; border-radius: 1rem; border: 1px solid var(--border-color); z-index: 1;"></div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    let lat = {{ requirement.winning_bid.transporter.transporter_profile.current_latitude|default:20.5937 }};
+                    let lng = {{ requirement.winning_bid.transporter.transporter_profile.current_longitude|default:78.9629 }};
+
+                    var map = L.map('map').setView([lat, lng], 13);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(map);
+
+                    var customIcon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: "<div style='background-color:#3B82F6; color:white; padding:5px; border-radius:50%; text-align:center; box-shadow:0 0 10px rgba(59,130,246,0.8); width:30px; height:30px; line-height:20px; font-size:16px;'>🚚</div>",
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+
+                    var marker = L.marker([lat, lng], { icon: customIcon }).addTo(map)
+                        .bindPopup("{{ requirement.winning_bid.transporter.transporter_profile.transporter_name }} - En route").openPopup();
+
+                    // Simulate movement every 2 seconds
+                    setInterval(function () {
+                        lat += (Math.random() - 0.5) * 0.005;
+                        lng += (Math.random() - 0.5) * 0.005;
+                        var newLatLng = new L.LatLng(lat, lng);
+                        marker.setLatLng(newLatLng);
+                        map.panTo(newLatLng);
+                    }, 2000);
+                });
+            </script>
+        </div>
+        {% else %}
+        <!-- Placeholder for map before winner is selected -->
+        <div style="display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+            <div class="text-center text-secondary glass-card" style="width: 100%; border-style: dashed;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📍</div>
+                Transporter details and live tracking will appear here once a bid is accepted.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

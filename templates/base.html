@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Truck Bidding{% endblock %}</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+    <style>
+        .nav-brand a { color: var(--text-primary); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/">🚛 FreightBid</a>
+        </div>
+        <div class="nav-links">
+            {% if user.is_authenticated %}
+                <span style="color: var(--text-secondary); margin-right: 1rem;">Hello, {{ user.username }}</span>
+                <a href="/dashboard/" class="btn btn-outline">Dashboard</a>
+                <form action="/logout/" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="font-size:0.95rem; cursor:pointer;">Logout</button>
+                </form>
+            {% else %}
+                <a href="/login/" class="btn btn-outline">Login</a>
+                <a href="/signup/" class="btn btn-primary">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+    <main class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div style="margin-bottom: 1rem; padding: 1rem; border-radius: 0.5rem; background-color: {% if message.tags == 'error' %}#ef4444{% else %}#10B981{% endif %}; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>
